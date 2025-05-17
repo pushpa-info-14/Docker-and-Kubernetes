@@ -1,0 +1,168 @@
+docker pull redis
+docker run --name phoenix-redis -d redis
+docker run -p 6379:6379 --name phoenix-redis -d redis 
+
+https://github.com/qishibo/AnotherRedisDesktopManager/releases
+
+docker ps = list running containers
+docker run = creates and starts a new container with a command
+docker images
+docker stop <container_id> = stops the container
+docker stop <container_name> = stops the container
+docker start <container_id> = starts the container
+docker start <container_name> = starts the container
+docker ps -a = lists running and stopped containers
+docker run redis:4.0 = pulls the image, creates and starts the container
+docker run -p 6000:6379 = host:6000 -> container:6379
+docker run -d -p 6001:6379 --name my-redis redis
+
+docker logs <container_id>
+docker logs <container_name>
+docker exec -it <container_id> /bin/bash = get the terminal of the running container. /bin/sh
+docker exec -it <container_name> /bin/bash
+	: env - environment variables
+	: pwd
+	: exit
+
+docker stop <container_id> = starts a container
+docker start <container_name>
+
+docker network ls
+docker network create mongo-network
+
+docker run -d 
+	-p 27017:27017 
+	-e MONGO_INITDB_ROOT_USERNAME=admin 
+	-e MONGO_INITDB_ROOT_PASSWORD=1234 
+	--name mongo-db 
+	--net mongo-network mongo
+
+docker run -d 
+	-p 8081:8081 
+	-e ME_CONFIG_MONGODB_ADMINUSERNAME=admin 
+	-e ME_CONFIG_MONGODB_ADMINPASSWORD=1234
+	-e ME_CONFIG_MONGODB_SERVER=mongo-db
+	--name mongo-express 
+	--net mongo-network mongo-express
+	
+docker-compose -f mongo.yaml up
+docker-compose -f mongo.yaml up -d
+docker-compose -f mongo.yaml stop
+docker-compose -f mongo.yaml start
+docker-compose -f mongo.yaml down
+
+===== cocker-compose File ===============================
+
+version: '3'
+services:
+	mongo-db:
+		image: mongo
+		ports:
+			- 27017:27017
+		environment:
+			- MONGO_INITDB_ROOT_USERNAME=admin
+			- MONGO_INITDB_ROOT_PASSWORD=1234
+	mongo-express:
+		image: mongo-express
+		ports:
+			- 8081:8081
+		environment:
+			- ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+			- ME_CONFIG_MONGODB_ADMINPASSWORD=1234
+			- ME_CONFIG_MONGODB_SERVER=mongo-db
+
+===== Dockerfile =======================================
+
+FROM node:13-alpine = install node
+
+ENV MONGO_DB_USERNAME=admin\ = set MONGO_DB_USERNAME=admin
+	MONGO_DB_PWD=1234		 = set MONGO_DB_PWD=1234
+	
+RUN mkdir -p /home/app = create /home/app folder(Execute inside the container)
+
+COPY ./app /home/app = copy current folder files to /home/app (Execute inside the host)
+
+CMD ["node", "/home/app/server.js"] = starts the app with: "node server.js". Entry point command. You can have multiple run commands.
+
+docker build -t my-app:1.0 .
+docker images
+docker rm <container_id>
+docker rmi <image_id>
+
+==== Private Docker Repository ==================
+
+Pre-Requisites
+	1. AWS CLI needs to be installed
+	2. Credentials configured
+
+Image Naming in Docker Registries
+
+registry-name/image-name:tag
+
+In DockerHub:
+	>> docker pull mongo:4.2
+	>> docker pull docker.io/library/mongo:4.2
+In AWS ECR:
+	>> docker pull 520697001743.dkr.ecr.eu-central-1.amazonaws.com/my-app:1.0
+
+docker tag my-app:1.0 520697001743.dkr.ecr.eu-central-1.amazonaws.com/my-app:1.0 = rename the copy of image
+docker push 520697001743.dkr.ecr.eu-central-1.amazonaws.com/my-app:1.0
+
+=== Deploy the containerized app ===============
+
+version: '3'
+services:
+	my-app:
+		image: 520697001743.dkr.ecr.eu-central-1.amazonaws.com/my-app:1.0
+		ports:
+			- 3000:3000
+	mongo-db:
+		image: mongo
+		ports:
+			- 27017:27017
+		environment:
+			- MONGO_INITDB_ROOT_USERNAME=admin
+			- MONGO_INITDB_ROOT_PASSWORD=1234
+	mongo-express:
+		image: mongo-express
+		ports:
+			- 8081:8081
+		environment:
+			- ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+			- ME_CONFIG_MONGODB_ADMINPASSWORD=1234
+			- ME_CONFIG_MONGODB_SERVER=mongo-db
+			
+==== Docker Volumes ==================
+
+3 Volume Types
+
+1. Host Volumes: You decide where on the host file system the reference is made
+>> docker run -v /home/mount/data:/var/lib/mysql
+
+2. Anonymous Volumes: For each container a folder is generated that gets mounted. Automatically created by Docker.
+>> docker run -v /var/lib/mysql
+
+3. Named Volumes: You can reference the volume by name
+>> docker run -v name:/var/lib/mysql
+
+version: '3'
+services:
+	mongo-db:
+		image: mongo
+		ports:
+			- 27017:27017
+		volumes:
+			- mongo-data:/data/db
+volumes:
+	mongo-data:
+		driver: local
+		
+Mongo: /data/db
+MySql: /var/lib/mysql
+Postgres: /var/lib/pgsql/data
+
+==== Docker Volume Locations ========================
+
+Windows: C:\ProgramData\docker\volumes
+Linux: /var/lib/docker/volumes
+Mac: /var/lib/docker/volumes
